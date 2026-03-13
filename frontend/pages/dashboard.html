@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MindLog — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sage: #7a9e87;
+  --sage-light: #d4e6db;
+  --sage-pale: #f0f7f2;
+  --amber: #d4845a;
+  --amber-light: #faeee6;
+  --text: #1a2e22;
+  --text-muted: #6b8074;
+  --card-bg: #ffffff;
+  --border: #d8e8de;
+  --red: #c0392b;
+  --red-light: #fdecea;
+  --positive: #3d9970;
+  --neutral: #7f8c8d;
+  --anxious: #e67e22;
+  --depressed: #8e44ad;
+  --sidebar-w: 240px;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--sage-pale);
+  color: var(--text);
+  min-height: 100vh;
+  background-image: radial-gradient(circle at 10% 10%, #d4e6db55 0%, transparent 45%);
+}
+
+/* NAV */
+.topnav {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-chip {
+  background: var(--sage-pale);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px 5px 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.avatar {
+  width: 26px;
+  height: 26px;
+  background: var(--sage);
+  border-radius: 50%;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.83rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.logout-btn:hover { background: var(--red-light); color: var(--red); border-color: #f5c6c2; }
+
+/* LAYOUT */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+}
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+/* ALERT BANNER */
+.alert-banner {
+  background: linear-gradient(135deg, #fdecea, #fef3f0);
+  border: 1.5px solid #f5aca2;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: none;
+  animation: slideDown 0.4s ease;
+}
+@keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+
+.alert-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.alert-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alert-title {
+  font-weight: 500;
+  color: #8b2a1e;
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
+}
+
+.alert-body {
+  font-size: 0.85rem;
+  color: #a83228;
+  line-height: 1.5;
+}
+
+.alert-resources {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.resource-link {
+  background: white;
+  border: 1px solid #f5aca2;
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 0.78rem;
+  color: #c0392b;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.resource-link:hover { background: #fdecea; }
+
+/* CARD */
+.card {
+  background: var(--card-bg);
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  box-shadow: 0 2px 20px rgba(122,158,135,0.08);
+}
+
+.card-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem;
+  color: var(--text);
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* STATS ROW */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  text-align: center;
+}
+
+.stat-value {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.8rem;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 0.3rem;
+}
+
+.stat-label {
+  font-size: 0.77rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 500;
+}
+
+/* MOOD LABEL BADGE */
+.label-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+.label-Positive  { background: #d5f5e3; color: #1e8449; }
+.label-Neutral   { background: #eaecee; color: #5d6d7e; }
+.label-Anxious   { background: #fdebd0; color: #a04000; }
+.label-Depressed { background: #f5eef8; color: #6c3483; }
+
+/* LOG FORM */
+.form-group { margin-bottom: 1rem; }
+
+label.field-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+textarea {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.93rem;
+  color: var(--text);
+  resize: vertical;
+  min-height: 100px;
+  outline: none;
+  transition: border-color 0.2s;
+  background: white;
+}
+textarea:focus { border-color: var(--sage); }
+
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+input[type="range"] {
+  flex: 1;
+  accent-color: var(--sage);
+  height: 5px;
+}
+
+.score-display {
+  width: 40px;
+  height: 40px;
+  background: var(--sage);
+  border-radius: 50%;
+  color: white;
+  font-weight: 500;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.85rem;
+  background: var(--sage);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 0.5rem;
+}
+.submit-btn:hover { background: #6a8e77; }
+.submit-btn:active { transform: scale(0.98); }
+.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* RESULT CARD after submission */
+.result-card {
+  background: var(--sage-pale);
+  border: 1px solid var(--sage-light);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  margin-top: 1rem;
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from {opacity:0; transform:translateY(6px);} to {opacity:1; transform:translateY(0);} }
+
+.result-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.result-note {
+  font-size: 0.83rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* HISTORY */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.history-list::-webkit-scrollbar { width: 4px; }
+.history-list::-webkit-scrollbar-track { background: transparent; }
+.history-list::-webkit-scrollbar-thumb { background: var(--sage-light); border-radius: 4px; }
+
+.log-item {
+  background: var(--sage-pale);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  transition: border-color 0.2s;
+  position: relative;
+}
+.log-item:hover { border-color: var(--sage); }
+
+.log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.log-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.log-score {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--sage);
+}
+
+.log-text {
+  font-size: 0.87rem;
+  color: var(--text);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.log-item:hover .delete-btn { opacity: 1; }
+.delete-btn:hover { background: var(--red-light); color: var(--red); }
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.empty-state .empty-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+
+/* CHART */
+.chart-wrap {
+  position: relative;
+  height: 200px;
+  margin-top: 0.5rem;
+}
+
+/* LABEL BREAKDOWN */
+.label-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 1rem;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.label-name { width: 80px; color: var(--text-muted); }
+
+.label-bar-wrap {
+  flex: 1;
+  background: var(--sage-pale);
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.label-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.bar-Positive  { background: #2ecc71; }
+.bar-Neutral   { background: #95a5a6; }
+.bar-Anxious   { background: #e67e22; }
+.bar-Depressed { background: #9b59b6; }
+
+.label-count { min-width: 24px; text-align: right; color: var(--text-muted); font-size: 0.8rem; }
+
+/* SDG footer */
+.sdg-footer {
+  text-align: center;
+  padding: 1.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.sdg-footer span {
+  background: var(--sage-light);
+  color: var(--sage);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="topnav">
+  <div class="nav-brand">🌿 MindLog</div>
+  <div class="nav-right">
+    <div class="user-chip">
+      <div class="avatar" id="user-avatar">?</div>
+      <span id="user-name">Loading...</span>
+    </div>
+    <button class="logout-btn" onclick="logout()">Sign out</button>
+  </div>
+</nav>
+
+<div style="max-width:1200px;margin:0 auto;padding:1.5rem 2rem 0;">
+  <!-- ALERT BANNER -->
+  <div id="alert-banner" class="alert-banner">
+    <div class="alert-inner">
+      <div class="alert-icon">⚠️</div>
+      <div>
+        <div class="alert-title">We noticed you may be struggling</div>
+        <div class="alert-body">Your recent mood logs show a pattern of distress. You're not alone — please consider reaching out for support.</div>
+        <div class="alert-resources">
+          <a href="https://icallhelpline.org" target="_blank" class="resource-link">iCall Helpline</a>
+          <a href="https://vandrevalafoundation.com" target="_blank" class="resource-link">Vandrevala Foundation</a>
+          <a href="https://nimhans.ac.in" target="_blank" class="resource-link">NIMHANS</a>
+          <a href="https://www.thelivelovelaughfoundation.org" target="_blank" class="resource-link">Live Love Laugh</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-total">—</div>
+      <div class="stat-label">Total Entries</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-avg">—</div>
+      <div class="stat-label">Avg Mood Score</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-streak">—</div>
+      <div class="stat-label">Day Streak</div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- LEFT COLUMN -->
+  <div>
+    <!-- CHART CARD -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">📈 Mood Trend</div>
+      <div class="chart-wrap">
+        <canvas id="mood-chart"></canvas>
+      </div>
+      <!-- LABEL BREAKDOWN -->
+      <div class="label-breakdown" id="label-breakdown"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="card">
+      <div class="card-title">📓 Recent Entries</div>
+      <div class="history-list" id="history-list">
+        <div class="empty-state">
+          <div class="empty-icon">🌱</div>
+          <div>No entries yet. Start logging your mood!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN: LOG FORM -->
+  <div>
+    <div class="card" style="position:sticky;top:76px;">
+      <div class="card-title">✍️ Log Today's Mood</div>
+
+      <div class="form-group">
+        <label class="field-label">How are you feeling? Write freely</label>
+        <textarea id="entry-text" placeholder="Describe your day, your thoughts, your emotions... This is your safe space."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Mood Rating</label>
+        <div class="score-row">
+          <span style="font-size:0.8rem;color:var(--text-muted)">1</span>
+          <input type="range" id="mood-score" min="1" max="10" value="5" oninput="updateScore(this.value)"/>
+          <span style="font-size:0.8rem;color:var(--text-muted)">10</span>
+          <div class="score-display" id="score-display">5</div>
+        </div>
+      </div>
+
+      <button class="submit-btn" id="submit-btn" onclick="submitLog()">Analyse & Save Entry</button>
+
+      <div class="result-card" id="result-card">
+        <div class="result-label-row">
+          <span style="font-size:0.83rem;color:var(--text-muted);font-weight:500;">AI detected mood</span>
+          <span id="result-label-badge"></span>
+        </div>
+        <div class="result-note" id="result-note"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sdg-footer">
+  Supporting <span>UN SDG 3.4 — Mental Health & Well-Being</span> · MindLog 2024
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('token');
+let chartInstance = null;
+
+const MOOD_NOTES = {
+  Positive: "Great to hear you're doing well! Keep nurturing positive habits.",
+  Neutral: "A steady day. Small acts of self-care can brighten your mood.",
+  Anxious: "Anxiety can be overwhelming. Try deep breathing or a short walk.",
+  Depressed: "We hear you. Please reach out to someone you trust or a helpline."
+};
+
+const SCORE_COLORS = {
+  1:'#c0392b',2:'#c0392b',3:'#e74c3c',4:'#e67e22',5:'#f39c12',
+  6:'#f1c40f',7:'#2ecc71',8:'#27ae60',9:'#1abc9c',10:'#16a085'
+};
+
+if (!token) window.location.href = '/';
+
+// Init user info
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+document.getElementById('user-name').textContent = user.name || 'User';
+document.getElementById('user-avatar').textContent = (user.name || 'U')[0].toUpperCase();
+
+function logout() {
+  localStorage.clear();
+  window.location.href = '/';
+}
+
+function updateScore(v) {
+  document.getElementById('score-display').textContent = v;
+  document.getElementById('score-display').style.background = SCORE_COLORS[+v] || 'var(--sage)';
+}
+updateScore(5);
+
+async function apiFetch(url, options = {}) {
+  return fetch(API + url, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(options.headers||{}) }
+  });
+}
+
+async function loadStats() {
+  try {
+    const res = await apiFetch('/api/mood/stats');
+    const data = await res.json();
+    document.getElementById('stat-total').textContent = data.total || 0;
+    document.getElementById('stat-avg').textContent = data.average_score || '—';
+    if (data.alert_active) document.getElementById('alert-banner').style.display = 'block';
+    renderLabelBreakdown(data.label_counts || {}, data.total);
+  } catch(e) { console.error(e); }
+}
+
+async function loadHistory() {
+  try {
+    const res = await apiFetch('/api/mood/history?limit=30');
+    const data = await res.json();
+    const logs = data.logs || [];
+    renderHistory(logs);
+    renderChart(logs);
+    updateStreak(logs);
+  } catch(e) { console.error(e); }
+}
+
+function updateStreak(logs) {
+  if (!logs.length) { document.getElementById('stat-streak').textContent = 0; return; }
+  const dates = [...new Set(logs.map(l => l.created_at.split(' ')[0]))].sort().reverse();
+  let streak = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const diff = (new Date(dates[i-1]) - new Date(dates[i])) / 86400000;
+    if (diff <= 1) streak++;
+    else break;
+  }
+  document.getElementById('stat-streak').textContent = streak;
+}
+
+function renderHistory(logs) {
+  const list = document.getElementById('history-list');
+  if (!logs.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🌱</div><div>No entries yet. Start logging your mood!</div></div>';
+    return;
+  }
+  list.innerHTML = logs.map(l => `
+    <div class="log-item" id="log-${l.id}">
+      <div class="log-header">
+        <span class="log-date">${l.created_at}</span>
+        <span class="label-badge label-${l.predicted_label}">${l.predicted_label}</span>
+        <span class="log-score">Score: ${l.mood_score}/10</span>
+      </div>
+      <div class="log-text">${escapeHtml(l.entry_text)}</div>
+      <button class="delete-btn" onclick="deleteLog(${l.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderChart(logs) {
+  const reversed = [...logs].reverse().slice(-14);
+  if (!reversed.length) return;
+
+  const labels = reversed.map(l => {
+    const d = new Date(l.created_at);
+    return d.toLocaleDateString('en-IN', {month:'short', day:'numeric'});
+  });
+  const scores = reversed.map(l => l.mood_score);
+  const colors = scores.map(s => SCORE_COLORS[s] || '#7a9e87');
+
+  if (chartInstance) chartInstance.destroy();
+
+  const ctx = document.getElementById('mood-chart').getContext('2d');
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: scores,
+        borderColor: '#7a9e87',
+        backgroundColor: 'rgba(122,158,135,0.08)',
+        pointBackgroundColor: colors,
+        pointBorderColor: colors,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          min: 0, max: 10,
+          grid: { color: 'rgba(0,0,0,0.04)' },
+          ticks: { stepSize: 2, font: { family: 'DM Sans', size: 11 }, color: '#6b8074' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: 'DM Sans', size: 10 }, color: '#6b8074', maxRotation: 45 }
+        }
+      }
+    }
+  });
+}
+
+function renderLabelBreakdown(counts, total) {
+  const order = ['Positive','Neutral','Anxious','Depressed'];
+  const el = document.getElementById('label-breakdown');
+  if (!total) { el.innerHTML = ''; return; }
+  el.innerHTML = order.map(label => {
+    const count = counts[label] || 0;
+    const pct = total ? Math.round((count/total)*100) : 0;
+    return `
+      <div class="label-row">
+        <span class="label-name">${label}</span>
+        <div class="label-bar-wrap">
+          <div class="label-bar bar-${label}" style="width:${pct}%"></div>
+        </div>
+        <span class="label-count">${count}</span>
+      </div>`;
+  }).join('');
+}
+
+async function submitLog() {
+  const text = document.getElementById('entry-text').value.trim();
+  const score = document.getElementById('mood-score').value;
+  if (!text) { alert('Please write something before saving.'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Analysing...';
+
+  try {
+    const res = await apiFetch('/api/mood/log', {
+      method: 'POST',
+      body: JSON.stringify({ text, mood_score: parseInt(score) })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    // Show result
+    const label = data.entry.predicted_label;
+    const badge = document.getElementById('result-label-badge');
+    badge.textContent = label;
+    badge.className = `label-badge label-${label}`;
+    document.getElementById('result-note').textContent = MOOD_NOTES[label] || '';
+    document.getElementById('result-card').style.display = 'block';
+
+    // Show alert if flagged
+    if (data.alert) document.getElementById('alert-banner').style.display = 'block';
+
+    // Reset form
+    document.getElementById('entry-text').value = '';
+    document.getElementById('mood-score').value = 5;
+    updateScore(5);
+
+    // Reload data
+    await loadStats();
+    await loadHistory();
+
+  } catch(e) {
+    alert(e.message || 'Failed to save entry.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Analyse & Save Entry';
+  }
+}
+
+async function deleteLog(id) {
+  if (!confirm('Delete this entry?')) return;
+  try {
+    await apiFetch(`/api/mood/delete/${id}`, { method: 'DELETE' });
+    document.getElementById(`log-${id}`)?.remove();
+    await loadStats();
+    await loadHistory();
+  } catch(e) { alert('Could not delete.'); }
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Init
+loadStats();
+loadHistory();
+</script>
+</body>
+</html>

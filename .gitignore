@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Virtual environment
+venv/
+env/
+.env
+
+# Flask / SQLite database (generated at runtime)
+instance/
+*.db
+
+# ML model (regenerate with: python train_model.py)
+backend/ml/mood_model.pkl
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
